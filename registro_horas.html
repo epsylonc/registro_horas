@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Horas</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f3; --bg3: #ebebea;
+    --text: #1a1a1a; --text2: #666; --text3: #999;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --blue-bg: #e6f1fb; --blue-text: #0c447c;
+    --green-bg: #eaf3de; --green-text: #27500a;
+    --red-bg: #fcebeb; --red-text: #791f1f;
+    --amber-bg: #faeeda; --amber-text: #633806;
+    --radius: 8px; --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1c; --bg2: #272725; --bg3: #313130;
+      --text: #f0ede8; --text2: #a0a09a; --text3: #666;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+      --blue-bg: #0c447c; --blue-text: #b5d4f4;
+      --green-bg: #27500a; --green-text: #c0dd97;
+      --red-bg: #791f1f; --red-text: #f7c1c1;
+      --amber-bg: #633806; --amber-text: #fac775;
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg2); color: var(--text); min-height: 100vh; }
+  .app { max-width: 700px; margin: 0 auto; padding: 1rem; }
+  .header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 0 1.25rem; }
+  .header h1 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .header h1 svg { width: 20px; height: 20px; }
+  #sync-badge { font-size: 12px; padding: 4px 10px; border-radius: 20px; border: 0.5px solid var(--border); background: var(--bg); color: var(--text2); display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  #sync-badge.ok { background: var(--green-bg); color: var(--green-text); border-color: transparent; }
+  #sync-badge.err { background: var(--red-bg); color: var(--red-text); border-color: transparent; }
+  .tabs { display: flex; gap: 3px; background: var(--bg3); border-radius: var(--radius); padding: 3px; margin-bottom: 1.25rem; }
+  .tab { flex: 1; padding: 8px; text-align: center; font-size: 13px; color: var(--text2); border-radius: 6px; cursor: pointer; border: none; background: transparent; transition: all 0.15s; font-family: inherit; }
+  .tab.active { background: var(--bg); color: var(--text); font-weight: 500; box-shadow: 0 0 0 0.5px var(--border); }
+  .section { display: none; }
+  .section.active { display: block; }
+  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  input, select, textarea {
+    width: 100%; border: 0.5px solid var(--border2); border-radius: var(--radius);
+    padding: 9px 11px; font-size: 14px; font-family: inherit;
+    color: var(--text); background: var(--bg); transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #378ADD; box-shadow: 0 0 0 3px rgba(55,138,221,0.15); }
+  textarea { resize: vertical; min-height: 64px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: var(--radius); font-size: 14px; font-family: inherit; cursor: pointer; transition: all 0.15s; border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); }
+  .btn:hover { background: var(--bg2); }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--text); color: var(--bg); border-color: transparent; font-weight: 500; }
+  .btn-primary:hover { opacity: 0.88; background: var(--text); }
+  .btn-row { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 1rem; flex-wrap: wrap; }
+  .toggle-group { display: flex; border: 0.5px solid var(--border2); border-radius: var(--radius); overflow: hidden; }
+  .toggle-btn { flex: 1; padding: 9px 12px; font-size: 14px; font-family: inherit; cursor: pointer; border: none; background: transparent; color: var(--text2); transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .toggle-btn.active { background: var(--text); color: var(--bg); font-weight: 500; }
+  .toggle-btn:not(:last-child) { border-right: 0.5px solid var(--border2); }
+  .onsite-panel { background: var(--bg2); border-radius: var(--radius); padding: 1rem; margin-top: 4px; }
+  .panel-title { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+  .gastos-list { display: flex; flex-direction: column; gap: 7px; }
+  .gasto-row { display: grid; grid-template-columns: 1fr 90px 72px 32px; gap: 6px; align-items: center; }
+  .gasto-row input, .gasto-row select { font-size: 13px; padding: 7px 8px; }
+  .btn-add { background: transparent; border: 0.5px dashed var(--border2); border-radius: var(--radius); padding: 8px 12px; font-size: 12px; color: var(--text2); cursor: pointer; display: flex; align-items: center; gap: 5px; width: 100%; margin-top: 8px; font-family: inherit; }
+  .btn-add:hover { background: var(--bg2); }
+  .btn-icon { background: transparent; border: none; cursor: pointer; color: var(--text3); padding: 5px; border-radius: 5px; font-size: 16px; line-height: 1; }
+  .btn-icon:hover { color: var(--text); background: var(--bg3); }
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 1rem 0; }
+  .status-msg { font-size: 13px; padding: 8px 12px; border-radius: var(--radius); display: none; }
+  .status-msg.ok { display: block; background: var(--green-bg); color: var(--green-text); }
+  .status-msg.err { display: block; background: var(--red-bg); color: var(--red-text); }
+  .status-msg.info { display: block; background: var(--blue-bg); color: var(--blue-text); }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+  .metric { background: var(--bg2); border-radius: var(--radius); padding: 1rem; }
+  .metric-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+  .metric-value { font-size: 24px; font-weight: 600; color: var(--text); }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { font-size: 11px; font-weight: 600; color: var(--text2); text-align: left; padding: 8px 10px; border-bottom: 0.5px solid var(--border); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+  td { padding: 9px 10px; border-bottom: 0.5px solid var(--border); color: var(--text); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg2); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge-id { background: var(--blue-bg); color: var(--blue-text); }
+  .badge-onsite { background: var(--amber-bg); color: var(--amber-text); }
+  .badge-remoto { background: var(--blue-bg); color: var(--blue-text); }
+  .empty { text-align: center; padding: 2.5rem; color: var(--text3); font-size: 13px; }
+  .config-section h3 { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+  .project-row { display: grid; grid-template-columns: 80px 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .task-row { display: grid; grid-template-columns: 1fr 80px 32px; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .section-sub { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 0 6px; border-top: 0.5px solid var(--border); margin-top: 8px; }
+  .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--border2); border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Auth screen */
+  #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; gap: 1.5rem; text-align: center; }
+  #auth-screen h2 { font-size: 20px; font-weight: 600; }
+  #auth-screen p { font-size: 14px; color: var(--text2); max-width: 380px; line-height: 1.6; }
+  .auth-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 1rem; }
+  .auth-card label { font-size: 13px; color: var(--text2); }
+  .auth-card input { font-size: 13px; }
+  .btn-google { background: #4285f4; color: white; border-color: transparent; font-size: 14px; font-weight: 500; width: 100%; justify-content: center; padding: 11px; }
+  .btn-google:hover { background: #357ae8; }
+  .help-text { font-size: 12px; color: var(--text3); line-height: 1.5; }
+  a { color: #378ADD; }
+
+  @media (max-width: 500px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: 1; }
+    .gasto-row { grid-template-columns: 1fr 80px 32px; }
+    .gasto-row select.inp-gmoneda { display: none; }
+    .project-row { grid-template-columns: 70px 1fr; }
+    .project-row > div:last-child { grid-column: 1 / -1; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- AUTH SCREEN -->
+  <div id="auth-screen">
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="12" fill="#1a1a1a"/><path d="M14 24.5V16h4l6 10.5L30 16h4v8.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 28h20M14 32h12" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <h2>Registro de Horas</h2>
+    <p>Para sincronizar con Google Sheets necesitás configurar tu Client ID de Google OAuth una sola vez.</p>
+    <div class="auth-card">
+      <div class="form-group">
+        <label>Google OAuth Client ID</label>
+        <input type="text" id="inp-client-id" value="797600276452-d0dj51u99klh11gip238v3dvoutohbue.apps.googleusercontent.com">
+      </div>
+      <div class="form-group">
+        <label>ID de la planilla Google Sheets</label>
+        <input type="text" id="inp-sheet-id" value="1F6vnyuIWqA40gXCe29Yv7WCVkEKwjgvVdycim0ELXLA">
+      </div>
+      <button class="btn btn-google" onclick="iniciarOAuth()">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#fff" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.703-1.567 2.684-3.875 2.684-6.615z"/><path fill="#fff" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.909-2.259c-.806.54-1.837.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#fff" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#fff" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+        Conectar con Google
+      </button>
+      <p class="help-text">
+        ¿Cómo obtener el Client ID? 
+        <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a> → 
+        Crear credenciales → ID de cliente OAuth → Aplicación web → 
+        Agregar <strong>origen autorizado</strong>: la URL donde usás este archivo 
+        (ej: <code>file://</code> o tu dominio).
+      </p>
+    </div>
+  </div>
+
+  <!-- MAIN APP (hidden until auth) -->
+  <div id="main-app" style="display:none;">
+    <div class="header">
+      <h1>
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="8"/><path d="M10 6v4l2.5 2.5" stroke-linecap="round"/></svg>
+        Registro de horas
+      </h1>
+      <button id="sync-badge" onclick="cargarDatosSheets(true)">
+        <span id="sync-dot">●</span> <span id="sync-text">conectando…</span>
+      </button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('registro')">＋ Cargar</button>
+      <button class="tab" onclick="switchTab('resumen')">▦ Resumen</button>
+      <button class="tab" onclick="switchTab('config')">⚙ Proyectos</button>
+    </div>
+
+    <!-- TAB REGISTRO -->
+    <div id="tab-registro" class="section active">
+      <div class="card">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Fecha</label>
+            <input type="date" id="f-fecha">
+          </div>
+          <div class="form-group">
+            <label>Horas trabajadas</label>
+            <input type="number" id="f-horas" step="0.5" min="0.5" max="24" placeholder="1.5">
+          </div>
+          <div class="form-group full">
+            <label>Proyecto</label>
+            <select id="f-proyecto" onchange="onProyectoChange()">
+              <option value="">— seleccionar proyecto —</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Tarea</label>
+            <select id="f-tarea">
+              <option value="">— primero seleccioná un proyecto —</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Modalidad</label>
+            <div class="toggle-group">
+              <button class="toggle-btn active" id="btn-remoto" onclick="setModalidad('remoto')">
+                ⊡ Remoto
+              </button>
+              <button class="toggle-btn" id="btn-onsite" onclick="setModalidad('onsite')">
+                ⊞ Onsite
+              </button>
+            </div>
+          </div>
+          <div class="form-group full" id="onsite-section" style="display:none;">
+            <div class="onsite-panel">
+              <div class="panel-title">🚗 Traslado y gastos</div>
+              <div class="form-grid" style="margin-bottom:10px;">
+                <div class="form-group">
+                  <label>Horas de traslado</label>
+                  <input type="number" id="f-hs-traslado" step="0.5" min="0" placeholder="0.5">
+                </div>
+                <div class="form-group">
+                  <label>Medio de traslado</label>
+                  <select id="f-medio">
+                    <option value="">— sin traslado —</option>
+                    <option>Tren</option>
+                    <option>Auto alquilado</option>
+                    <option>Auto propio</option>
+                    <option>Taxi / Remis</option>
+                    <option>Bus / Colectivo</option>
+                    <option>Avión</option>
+                    <option>Otro</option>
+                  </select>
+                </div>
+              </div>
+              <div class="section-sub">Gastos adicionales</div>
+              <div class="gastos-list" id="gastos-list"></div>
+              <button class="btn-add" onclick="agregarGasto()">＋ Agregar gasto</button>
+            </div>
+          </div>
+          <div class="form-group full">
+            <label>Descripción</label>
+            <textarea id="f-desc" placeholder="Detalles de lo realizado…"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <div id="reg-status" class="status-msg"></div>
+          <button class="btn btn-primary" onclick="guardarRegistro()" id="btn-guardar">
+            💾 Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB RESUMEN -->
+    <div id="tab-resumen" class="section">
+      <div style="display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; align-items:center;">
+        <select id="filtro-mes" style="width:auto;" onchange="renderResumen()">
+          <option value="">Todos los meses</option>
+        </select>
+        <select id="filtro-cliente" style="width:auto;" onchange="renderResumen()">
+          <option value="">Todos los clientes</option>
+        </select>
+        <button class="btn" onclick="cargarDatosSheets(true)" style="margin-left:auto; font-size:12px;">↺ Actualizar</button>
+      </div>
+      <div class="metrics" id="metrics-row"></div>
+      <div class="card">
+        <div style="font-size:12px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.75rem;">Por cliente / proyecto</div>
+        <div class="table-wrap"><table id="tabla-cliente"></table></div>
+      </div>
+      <div class="card">
+        <div style="font-size:12px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.75rem;">Por semana</div>
+        <div class="table-wrap"><table id="tabla-semana"></table></div>
+      </div>
+      <div class="card">
+        <div style="font-size:12px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.75rem;">Gastos y traslados (onsite)</div>
+        <div class="table-wrap"><table id="tabla-gastos"></table></div>
+      </div>
+    </div>
+
+    <!-- TAB CONFIG -->
+    <div id="tab-config" class="section">
+      <div id="config-status" class="status-msg" style="margin-bottom:1rem;"></div>
+      <div class="config-section">
+        <h3>Proyectos y tareas</h3>
+        <div id="proyectos-list"></div>
+        <button class="btn-add" onclick="agregarProyecto()">＋ Agregar proyecto</button>
+      </div>
+      <hr class="divider">
+      <div class="btn-row">
+        <button class="btn" onclick="cargarDesdeSheets()">↓ Cargar desde Sheets</button>
+        <button class="btn btn-primary" onclick="guardarConfig()">☁ Guardar en Sheets</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const SHEET_ID_DEFAULT = '1F6vnyuIWqA40gXCe29Yv7WCVkEKwjgvVdycim0ELXLA';
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+const CLIENT_ID_DEFAULT = '797600276452-d0dj51u99klh11gip238v3dvoutohbue.apps.googleusercontent.com';
+const DISCOVERY = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
+
+let gapi_loaded = false, gis_loaded = false;
+let tokenClient = null, accessToken = null;
+let proyectos = [], registros = [], modalidad = 'remoto';
+let CLIENT_ID = CLIENT_ID_DEFAULT, SHEET_ID = SHEET_ID_DEFAULT;
+
+// ─── STORAGE HELPERS ─────────────────────────────────────────────────────────
+function saveConfig() {
+  localStorage.setItem('rh_client_id', CLIENT_ID);
+  localStorage.setItem('rh_sheet_id', SHEET_ID);
+}
+function loadSavedConfig() {
+  CLIENT_ID = localStorage.getItem("rh_client_id") || CLIENT_ID_DEFAULT;
+  SHEET_ID  = localStorage.getItem("rh_sheet_id")  || SHEET_ID_DEFAULT;
+  document.getElementById("inp-client-id").value = CLIENT_ID;
+  document.getElementById("inp-sheet-id").value  = SHEET_ID;
+}
+
+// ─── OAUTH / GAPI ────────────────────────────────────────────────────────────
+function onGapiLoaded() {
+  gapi.load('client', async () => {
+    await gapi.client.init({ discoveryDocs: [DISCOVERY] });
+    gapi_loaded = true;
+    maybeShowApp();
+  });
+}
+function onGisLoaded() { gis_loaded = true; maybeShowApp(); }
+
+function maybeShowApp() {
+  if (!gapi_loaded || !gis_loaded) return;
+  if (CLIENT_ID) tryAutoConnect();
+}
+
+function tryAutoConnect() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: onTokenReceived,
+  });
+  const saved = sessionStorage.getItem('rh_token');
+  if (saved) {
+    accessToken = saved;
+    gapi.client.setToken({ access_token: saved });
+    showMainApp();
+  }
+}
+
+function iniciarOAuth() {
+  CLIENT_ID = document.getElementById('inp-client-id').value.trim();
+  SHEET_ID  = document.getElementById('inp-sheet-id').value.trim() || SHEET_ID_DEFAULT;
+  if (!CLIENT_ID) { alert('Por favor ingresá el Client ID de Google OAuth.'); return; }
+  saveConfig();
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: onTokenReceived,
+  });
+  tokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+function onTokenReceived(resp) {
+  if (resp.error) { alert('Error de autenticación: ' + resp.error); return; }
+  accessToken = resp.access_token;
+  sessionStorage.setItem('rh_token', accessToken);
+  showMainApp();
+}
+
+function showMainApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
+  inicializar();
+}
+
+// ─── SHEETS API ───────────────────────────────────────────────────────────────
+async function sheetsGet(range) {
+  const r = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range });
+  return r.result;
+}
+async function sheetsUpdate(range, values) {
+  return gapi.client.sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range,
+    valueInputOption: 'RAW', resource: { values }
+  });
+}
+async function sheetsAppend(range, values) {
+  return gapi.client.sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID, range,
+    valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS',
+    resource: { values }
+  });
+}
+async function sheetsBatch(requests) {
+  return gapi.client.sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID, resource: { requests }
+  });
+}
+async function getSheetNames() {
+  const r = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  return r.result.sheets.map(s => s.properties.title);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+async function inicializar() {
+  setSyncStatus('connecting');
+  document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0];
+  try {
+    await asegurarHojas();
+    await cargarDesdeSheets();
+    await cargarDatosSheets(false);
+    setSyncStatus('ok');
+  } catch(e) {
+    console.error(e);
+    setSyncStatus('err');
+    cargarDemoData();
+  }
+}
+
+async function asegurarHojas() {
+  const nombres = await getSheetNames();
+  const needed = ['Registro','Proyectos'];
+  const toAdd = needed.filter(n => !nombres.includes(n));
+  if (toAdd.length) {
+    await sheetsBatch(toAdd.map(title => ({ addSheet: { properties: { title } } })));
+  }
+  if (toAdd.includes('Registro')) {
+    await sheetsUpdate('Registro!A1:K1', [['Fecha','Cliente','ID Proyecto','Proyecto','Tarea','Modalidad','Horas trabajo','Horas traslado','Medio traslado','Gastos (tipo:monto:moneda)','Descripción']]);
+  }
+  if (toAdd.includes('Proyectos')) {
+    await sheetsUpdate('Proyectos!A1:E1', [['ID','Cliente','Proyecto','Tarea','Horas Estimadas']]);
+  }
+  // Si ya existían pero están vacíos, escribir headers igual
+  if (!toAdd.includes('Registro')) {
+    try {
+      const r = await sheetsGet('Registro!A1');
+      if (!r.values || !r.values[0] || !r.values[0][0]) {
+        await sheetsUpdate('Registro!A1:K1', [['Fecha','Cliente','ID Proyecto','Proyecto','Tarea','Modalidad','Horas trabajo','Horas traslado','Medio traslado','Gastos (tipo:monto:moneda)','Descripción']]);
+      }
+    } catch(e) {}
+  }
+  if (!toAdd.includes('Proyectos')) {
+    try {
+      const r = await sheetsGet('Proyectos!A1');
+      if (!r.values || !r.values[0] || !r.values[0][0]) {
+        await sheetsUpdate('Proyectos!A1:E1', [['ID','Cliente','Proyecto','Tarea','Horas Estimadas']]);
+      }
+    } catch(e) {}
+  }
+}
+
+function setSyncStatus(state) {
+  const b = document.getElementById('sync-badge');
+  const t = document.getElementById('sync-text');
+  b.className = '';
+  if (state === 'ok')          { b.className='ok';  t.textContent='conectado'; }
+  else if (state === 'err')    { b.className='err'; t.textContent='error — reintentar'; }
+  else if (state === 'connecting') { t.textContent='conectando…'; }
+}
+
+// ─── PROYECTOS ────────────────────────────────────────────────────────────────
+async function cargarDesdeSheets() {
+  try {
+    const r = await sheetsGet('Proyectos!A2:E500');
+    const map = {};
+    (r.values||[]).forEach(row => {
+      if (!row[0]) return;
+      if (!map[row[0]]) map[row[0]] = { id:row[0], cliente:row[1]||'', nombre:row[2]||'', tareas:[] };
+      if (row[3]) map[row[0]].tareas.push({ nombre:row[3], horas:parseFloat(row[4])||0 });
+    });
+    proyectos = Object.values(map);
+    if (!proyectos.length) cargarDemoProyectos();
+    renderProyectosForm();
+    renderProyectosSelect();
+  } catch(e) { cargarDemoProyectos(); renderProyectosForm(); renderProyectosSelect(); }
+}
+
+async function guardarConfig() {
+  leerProyectosForm();
+  const btn = event.target; btn.textContent='…'; btn.disabled=true;
+  const rows = [['ID','Cliente','Proyecto','Tarea','Horas Estimadas']];
+  proyectos.forEach(p => {
+    if (!p.tareas.length) rows.push([p.id,p.cliente,p.nombre,'','']);
+    else p.tareas.forEach(t => rows.push([p.id,p.cliente,p.nombre,t.nombre,t.horas||'']));
+  });
+  try {
+    await sheetsUpdate('Proyectos!A:E', rows);
+    showStatus('config-status','✓ Proyectos guardados en Sheets','ok');
+    renderProyectosSelect();
+  } catch { showStatus('config-status','Error al guardar','err'); }
+  btn.textContent='☁ Guardar en Sheets'; btn.disabled=false;
+}
+
+// ─── REGISTROS ────────────────────────────────────────────────────────────────
+async function cargarDatosSheets(msg) {
+  try {
+    const r = await sheetsGet('Registro!A2:K2000');
+    registros = (r.values||[]).map(row => ({
+      fecha:row[0]||'', cliente:row[1]||'', idProyecto:row[2]||'', proyecto:row[3]||'',
+      tarea:row[4]||'', modalidad:row[5]||'remoto', horas:parseFloat(row[6])||0,
+      hsTraslado:parseFloat(row[7])||0, medioTraslado:row[8]||'',
+      gastos:row[9]||'', desc:row[10]||''
+    }));
+    renderResumen();
+    if (msg) showStatus('config-status','✓ Datos actualizados','ok');
+  } catch { if (msg) showStatus('config-status','Error al leer Sheets','err'); }
+}
+
+async function guardarRegistro() {
+  const fecha     = document.getElementById('f-fecha').value;
+  const horas     = parseFloat(document.getElementById('f-horas').value);
+  const projId    = document.getElementById('f-proyecto').value;
+  const tarea     = document.getElementById('f-tarea').value;
+  const desc      = document.getElementById('f-desc').value.trim();
+  if (!fecha || !horas || !projId || !tarea) { showStatus('reg-status','Completá todos los campos','err'); return; }
+  const p = proyectos.find(x => x.id === projId);
+  const hsTraslado  = modalidad==='onsite' ? (parseFloat(document.getElementById('f-hs-traslado').value)||0) : 0;
+  const medioTraslado = modalidad==='onsite' ? document.getElementById('f-medio').value : '';
+  const gastos = modalidad==='onsite' ? leerGastos() : '';
+  const btn = document.getElementById('btn-guardar');
+  btn.innerHTML = '<span class="spinner"></span>'; btn.disabled=true;
+  const row = [fecha,p.cliente,p.id,p.nombre,tarea,modalidad,horas,hsTraslado||'',medioTraslado,gastos,desc];
+  try {
+    await sheetsAppend('Registro!A:K', [row]);
+    registros.push({ fecha,cliente:p.cliente,idProyecto:p.id,proyecto:p.nombre,tarea,modalidad,horas,hsTraslado,medioTraslado,gastos,desc });
+    showStatus('reg-status',`✓ Guardado: ${horas}h ${modalidad==='onsite'?'(onsite)':'(remoto)'} — ${p.nombre}`,'ok');
+    document.getElementById('f-horas').value='';
+    document.getElementById('f-tarea').value='';
+    document.getElementById('f-desc').value='';
+    document.getElementById('f-hs-traslado').value='';
+    document.getElementById('f-medio').value='';
+    document.getElementById('gastos-list').innerHTML='';
+    renderResumen();
+  } catch(e) { showStatus('reg-status','Error al guardar. Token expirado? Recargá la página.','err'); }
+  btn.innerHTML='💾 Guardar'; btn.disabled=false;
+}
+
+// ─── UI HELPERS ───────────────────────────────────────────────────────────────
+function setModalidad(m) {
+  modalidad = m;
+  document.getElementById('btn-remoto').classList.toggle('active', m==='remoto');
+  document.getElementById('btn-onsite').classList.toggle('active', m==='onsite');
+  document.getElementById('onsite-section').style.display = m==='onsite' ? 'block' : 'none';
+}
+
+function gastoRowHTML(tipo='',monto='',moneda='EUR') {
+  const tipos = ['Tren','Auto alquilado','Combustible','Taxi / Remis','Peaje','Estacionamiento','Alojamiento','Comida','Otro'];
+  const monedas = ['EUR','USD','ARS','GBP'];
+  return `<div class="gasto-row">
+    <select class="inp-gtipo"><option value="">— tipo —</option>${tipos.map(t=>`<option ${t===tipo?'selected':''}>${t}</option>`).join('')}</select>
+    <input class="inp-gmonto" type="number" step="0.01" min="0" placeholder="0.00" value="${monto}">
+    <select class="inp-gmoneda">${monedas.map(m=>`<option ${m===moneda?'selected':''}>${m}</option>`).join('')}</select>
+    <button class="btn-icon" onclick="this.closest('.gasto-row').remove()">✕</button>
+  </div>`;
+}
+function agregarGasto() {
+  const d=document.createElement('div'); d.innerHTML=gastoRowHTML();
+  document.getElementById('gastos-list').appendChild(d.firstElementChild);
+}
+function leerGastos() {
+  const out=[];
+  document.querySelectorAll('#gastos-list .gasto-row').forEach(r=>{
+    const tipo=r.querySelector('.inp-gtipo').value;
+    const monto=parseFloat(r.querySelector('.inp-gmonto').value);
+    const moneda=r.querySelector('.inp-gmoneda').value;
+    if(tipo&&monto>0) out.push(`${tipo}:${monto}:${moneda}`);
+  });
+  return out.join('|');
+}
+
+function onProyectoChange() {
+  const id=document.getElementById('f-proyecto').value;
+  const sel=document.getElementById('f-tarea');
+  const p=proyectos.find(x=>x.id===id);
+  if(!p){sel.innerHTML='<option value="">— primero seleccioná un proyecto —</option>';return;}
+  sel.innerHTML='<option value="">— seleccionar tarea —</option>';
+  p.tareas.forEach(t=>{
+    const o=document.createElement('option');
+    o.value=t.nombre; o.textContent=t.horas>0?`${t.nombre} (${t.horas}h est.)`:t.nombre;
+    sel.appendChild(o);
+  });
+}
+
+function renderProyectosSelect() {
+  const sel=document.getElementById('f-proyecto'); const val=sel.value;
+  sel.innerHTML='<option value="">— seleccionar proyecto —</option>';
+  proyectos.forEach(p=>{
+    const o=document.createElement('option');
+    o.value=p.id; o.textContent=`[${p.id}] ${p.cliente} — ${p.nombre}`;
+    sel.appendChild(o);
+  });
+  if(val) sel.value=val;
+}
+
+function renderProyectosForm() {
+  const el=document.getElementById('proyectos-list'); el.innerHTML='';
+  const colors=['#185FA5','#0F6E56','#993C1D','#993556','#3B6D11','#854F0B','#534AB7'];
+  proyectos.forEach((p,i)=>{
+    const div=document.createElement('div');
+    div.className='card proj-container'; div.style.marginBottom='0.75rem';
+    div.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span style="font-size:13px;font-weight:600;color:${colors[i%colors.length]}">Proyecto ${i+1}</span>
+      <button class="btn-icon" onclick="this.closest('.proj-container').remove()">🗑</button>
+    </div>
+    <div class="project-row">
+      <div><label>ID</label><input class="inp-id" value="${p.id}" maxlength="10" placeholder="A01" style="text-transform:uppercase;"></div>
+      <div><label>Cliente</label><input class="inp-cliente" value="${p.cliente}" placeholder="Nombre del cliente"></div>
+      <div><label>Proyecto</label><input class="inp-nombre" value="${p.nombre}" placeholder="Nombre del proyecto"></div>
+    </div>
+    <hr class="divider" style="margin:0.5rem 0 0.75rem;">
+    <div class="section-sub">Tareas del plan</div>
+    <div class="tasks-list">${p.tareas.map(t=>`<div class="task-row">
+      <input class="inp-tarea" value="${t.nombre}" placeholder="Nombre de la tarea">
+      <input class="inp-th" type="number" value="${t.horas||''}" min="0" step="0.5" placeholder="Hs est.">
+      <button class="btn-icon" onclick="this.closest('.task-row').remove()">✕</button>
+    </div>`).join('')}</div>
+    <button class="btn-add" onclick="(function(btn){const d=document.createElement('div');d.innerHTML='<div class=\\'task-row\\'><input class=\\'inp-tarea\\' placeholder=\\'Nombre de la tarea\\'><input class=\\'inp-th\\' type=\\'number\\' min=\\'0\\' step=\\'0.5\\' placeholder=\\'Hs est.\\'><button class=\\'btn-icon\\' onclick=\\'this.closest(\\'.task-row\\').remove()\\'>✕</button></div>';btn.previousElementSibling.appendChild(d.firstElementChild);})(this)">＋ Agregar tarea</button>`;
+    el.appendChild(div);
+  });
+}
+
+function agregarProyecto() {
+  leerProyectosForm();
+  proyectos.push({id:'',cliente:'',nombre:'',tareas:[]});
+  renderProyectosForm();
+}
+
+function leerProyectosForm() {
+  proyectos=[];
+  document.querySelectorAll('.proj-container').forEach(c=>{
+    const id=c.querySelector('.inp-id').value.trim().toUpperCase();
+    const cliente=c.querySelector('.inp-cliente').value.trim();
+    const nombre=c.querySelector('.inp-nombre').value.trim();
+    if(!id) return;
+    const tareas=[];
+    c.querySelectorAll('.task-row').forEach(tr=>{
+      const tn=tr.querySelector('.inp-tarea').value.trim();
+      const th=parseFloat(tr.querySelector('.inp-th').value)||0;
+      if(tn) tareas.push({nombre:tn,horas:th});
+    });
+    proyectos.push({id,cliente,nombre,tareas});
+  });
+}
+
+// ─── RESUMEN ──────────────────────────────────────────────────────────────────
+function renderResumen() {
+  const mes=document.getElementById('filtro-mes').value;
+  const cli=document.getElementById('filtro-cliente').value;
+  const meses=[...new Set(registros.map(r=>r.fecha.slice(0,7)))].sort().reverse();
+  const clis=[...new Set(registros.map(r=>r.cliente))].sort();
+  document.getElementById('filtro-mes').innerHTML='<option value="">Todos los meses</option>'+meses.map(m=>`<option value="${m}" ${m===mes?'selected':''}>${m}</option>`).join('');
+  document.getElementById('filtro-cliente').innerHTML='<option value="">Todos los clientes</option>'+clis.map(c=>`<option value="${c}" ${c===cli?'selected':''}>${c}</option>`).join('');
+  let data=registros;
+  if(mes) data=data.filter(r=>r.fecha.startsWith(mes));
+  if(cli) data=data.filter(r=>r.cliente===cli);
+  const totalH=data.reduce((s,r)=>s+r.horas,0);
+  const totalT=data.reduce((s,r)=>s+(r.hsTraslado||0),0);
+  const dias=[...new Set(data.map(r=>r.fecha))].length;
+  const onsite=data.filter(r=>r.modalidad==='onsite').length;
+  document.getElementById('metrics-row').innerHTML=`
+    <div class="metric"><div class="metric-label">Horas trabajo</div><div class="metric-value">${totalH.toFixed(1)}</div></div>
+    <div class="metric"><div class="metric-label">Hs traslado</div><div class="metric-value">${totalT.toFixed(1)}</div></div>
+    <div class="metric"><div class="metric-label">Días</div><div class="metric-value">${dias}</div></div>
+    <div class="metric"><div class="metric-label">Onsite</div><div class="metric-value">${onsite}</div></div>`;
+  const byProj={};
+  data.forEach(r=>{
+    const k=r.idProyecto||r.proyecto;
+    if(!byProj[k]) byProj[k]={cliente:r.cliente,proyecto:r.proyecto,id:r.idProyecto,horas:0,hsT:0,on:0,rem:0};
+    byProj[k].horas+=r.horas; byProj[k].hsT+=r.hsTraslado||0;
+    r.modalidad==='onsite'?byProj[k].on++:byProj[k].rem++;
+  });
+  document.getElementById('tabla-cliente').innerHTML=!Object.keys(byProj).length
+    ?'<tr><td class="empty">Sin registros en el período</td></tr>'
+    :`<thead><tr><th>ID</th><th>Cliente / Proyecto</th><th style="text-align:right">Hs trabajo</th><th style="text-align:right">Hs traslado</th><th>Modalidad</th></tr></thead><tbody>
+    ${Object.values(byProj).sort((a,b)=>b.horas-a.horas).map(p=>`<tr>
+      <td><span class="badge badge-id">${p.id}</span></td>
+      <td>${p.cliente}<br><span style="font-size:12px;color:var(--text2)">${p.proyecto}</span></td>
+      <td style="text-align:right;font-weight:600">${p.horas.toFixed(1)}h</td>
+      <td style="text-align:right;color:var(--text2)">${p.hsT>0?p.hsT.toFixed(1)+'h':'—'}</td>
+      <td><span class="badge badge-onsite">${p.on}on</span> <span class="badge badge-remoto">${p.rem}rem</span></td>
+    </tr>`).join('')}</tbody>`;
+  const bySem={};
+  data.forEach(r=>{
+    const d=new Date(r.fecha+'T12:00:00');const dow=d.getDay();
+    const lun=new Date(d);lun.setDate(d.getDate()-(dow===0?6:dow-1));
+    const k=lun.toISOString().split('T')[0];
+    if(!bySem[k]) bySem[k]={semana:k,horas:0,traslado:0,projs:new Set()};
+    bySem[k].horas+=r.horas;bySem[k].traslado+=r.hsTraslado||0;bySem[k].projs.add(r.idProyecto);
+  });
+  const sems=Object.values(bySem).sort((a,b)=>b.semana.localeCompare(a.semana));
+  document.getElementById('tabla-semana').innerHTML=!sems.length
+    ?'<tr><td class="empty">Sin registros</td></tr>'
+    :`<thead><tr><th>Semana desde</th><th>Proyectos</th><th style="text-align:right">Hs trabajo</th><th style="text-align:right">Hs traslado</th></tr></thead><tbody>
+    ${sems.map(s=>`<tr><td>${s.semana}</td><td style="color:var(--text2)">${s.projs.size}</td><td style="text-align:right;font-weight:600">${s.horas.toFixed(1)}h</td><td style="text-align:right;color:var(--text2)">${s.traslado>0?s.traslado.toFixed(1)+'h':'—'}</td></tr>`).join('')}</tbody>`;
+  const gd=[];
+  data.filter(r=>r.modalidad==='onsite'&&r.gastos).forEach(r=>{
+    r.gastos.split('|').forEach(g=>{const p=g.split(':');if(p.length===3) gd.push({fecha:r.fecha,proyecto:r.proyecto,tipo:p[0],monto:parseFloat(p[1]),moneda:p[2]});});
+  });
+  document.getElementById('tabla-gastos').innerHTML=!gd.length
+    ?'<tr><td class="empty">Sin gastos en el período</td></tr>'
+    :`<thead><tr><th>Fecha</th><th>Proyecto</th><th>Tipo</th><th style="text-align:right">Monto</th><th>Mon.</th></tr></thead><tbody>
+    ${gd.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(g=>`<tr>
+      <td style="color:var(--text2)">${g.fecha}</td><td>${g.proyecto}</td><td>${g.tipo}</td>
+      <td style="text-align:right;font-weight:600">${g.monto.toFixed(2)}</td>
+      <td><span class="badge" style="background:var(--bg2);color:var(--text2)">${g.moneda}</span></td>
+    </tr>`).join('')}</tbody>`;
+}
+
+function showStatus(id,msg,type) {
+  const el=document.getElementById(id);
+  el.textContent=msg; el.className='status-msg '+type;
+  setTimeout(()=>{el.className='status-msg';},4000);
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['registro','resumen','config'][i]===name));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='resumen') renderResumen();
+}
+
+function cargarDemoProyectos() {
+  proyectos=[{id:'A01',cliente:'Cliente Demo',nombre:'Proyecto Demo',tareas:[{nombre:'Relevamiento',horas:8},{nombre:'Diseño',horas:16},{nombre:'Desarrollo',horas:40}]}];
+}
+function cargarDemoData() { cargarDemoProyectos(); renderProyectosForm(); renderProyectosSelect(); registros=[]; renderResumen(); }
+
+// ─── LOAD GOOGLE APIS ────────────────────────────────────────────────────────
+window.onload = () => {
+  loadSavedConfig();
+  const s1=document.createElement('script');
+  s1.src='https://apis.google.com/js/api.js';
+  s1.onload=()=>onGapiLoaded();
+  document.head.appendChild(s1);
+  const s2=document.createElement('script');
+  s2.src='https://accounts.google.com/gsi/client';
+  s2.onload=()=>onGisLoaded();
+  document.head.appendChild(s2);
+};
+</script>
+</body>
+</html>
